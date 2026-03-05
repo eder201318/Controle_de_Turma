@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controlo da Portaria - Essencial</title>
+    <!-- Carrega o Tailwind CSS para o design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        button {
+            -webkit-tap-highlight-color: transparent;
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+        /* Esconde a barra de scroll horizontal mas mantém a funcionalidade */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans pb-8 text-slate-800">
+
+    <div id="app-root"></div>
+
+    <script>
+        // =========================================================================
+        // ⚙️ CONFIGURAÇÕES DE HORÁRIO DOS TURNOS
+        // =========================================================================
+        const CONFIG_TURNOS = {
+            FIM_DA_MANHA: '13:00',     // Aulas que saem ANTES disto são da 'Manhã'
+            INICIO_DA_NOITE: '19:00'   // Aulas que saem A PARTIR disto são da 'Noite' (Ajustado para 19:00 por causa das saídas às 18:45)
+        };
+        // =========================================================================
+
+        // Ícones em formato SVG
+        const icones = {
+            users: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+            checkSquare: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+            clock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+            checkCircle: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+            live: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>`,
+            manha: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+            tarde: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+            noite: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`
+        };
+
+        // Base de dados com horários exatos da imagem
+        const turmasBase = [
+            { id: 'S_Terezinha_1', nome: '6º ANO A', grade: { segunda: { saida: '18:45' }, terca: { saida: '18:45' }, quarta: { saida: '18:45' }, quinta: { saida: '18:45' }, sexta: { saida: '18:45' } } },
+            { id: 'S_Terezinha_2', nome: '6º ANO B', grade: { segunda: { saida: '18:45' }, terca: { saida: '18:00' }, quarta: { saida: '18:45' }, quinta: { saida: '18:45' }, sexta: { saida: '18:45' } } },
+            { id: 'S_Terezinha_3', nome: '7º ANO A', grade: { segunda: { saida: '18:45' }, terca: { saida: '18:45' }, quarta: { saida: '18:45' }, quinta: { saida: '18:45' }, sexta: { saida: '18:00' } } },
+            { id: 'S_Terezinha_4', nome: '7º ANO B', grade: { segunda: { saida: '18:45' }, terca: { saida: '18:45' }, quarta: { saida: '16:15' }, quinta: { saida: '18:45' }, sexta: { saida: '18:00' } } },
+            { id: 'S_Terezinha_5', nome: '7º ANO C', grade: { segunda: { saida: '18:00' }, terca: { saida: '18:00' }, quarta: { saida: '18:45' }, quinta: { saida: '18:45' }, sexta: { saida: '18:00' } } },
+            { id: 'S_Terezinha_6', nome: '8º ANO A', grade: { segunda: { saida: '18:45' }, terca: { saida: '18:00' }, quarta: { saida: '18:45' }, quinta: { saida: '18:00' }, sexta: { saida: '18:00' } } },
+            { id: 'S_Terezinha_7', nome: '8º ANO B', grade: { segunda: { saida: '18:00' }, terca: { saida: '18:45' }, quarta: { saida: '18:45' }, quinta: { saida: '18:45' }, sexta: { saida: '17:15' } } },
+            { id: 'S_Terezinha_8', nome: '9º ANO U', grade: { segunda: { saida: '17:15' }, terca: { saida: '18:45' }, quarta: { saida: '18:00' }, quinta: { saida: '18:45' }, sexta: { saida: '18:45' } } }
+        ];
+
+        const chaveDoDia = { 0: 'domingo', 1: 'segunda', 2: 'terca', 3: 'quarta', 4: 'quinta', 5: 'sexta', 6: 'sabado' };
+        const diasDaSemana = [
+            { valor: 1, nome: 'Seg' }, { valor: 2, nome: 'Ter' }, { valor: 3, nome: 'Qua' },
+            { valor: 4, nome: 'Qui' }, { valor: 5, nome: 'Sex' }, { valor: 6, nome: 'Sáb' }, { valor: 0, nome: 'Dom' }
+        ];
+
+        const statusInfo = {
+            em_aula: { nome: 'Em Aula', bannerClass: 'bg-amber-100 text-amber-800 border-amber-300', iconeSVG: icones.clock },
+            liberada: { nome: 'Liberada', bannerClass: 'bg-green-100 text-green-800 border-green-300', iconeSVG: icones.checkCircle }
+        };
+
+        const turnosConfig = {
+            'Manhã': { icone: icones.manha, border: 'border-sky-200', bg: 'bg-sky-100', cor: 'text-sky-600' },
+            'Tarde': { icone: icones.tarde, border: 'border-amber-200', bg: 'bg-amber-100', cor: 'text-amber-600' },
+            'Noite': { icone: icones.noite, border: 'border-indigo-200', bg: 'bg-indigo-100', cor: 'text-indigo-600' }
+        };
+
+        // Variáveis globais
+        let diaSelecionado; // Será inicializado no onload
+        let turnoSelecionado = 'Tarde'; // Predefinição alterada para a Tarde baseado nos horários
+
+        function obterDataBrasilia() {
+            const dataLocal = new Date();
+            const dataBrasiliaStr = dataLocal.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"});
+            return new Date(dataBrasiliaStr);
+        }
+
+        function obterTurno(horario) {
+            if (horario === '00:00' || horario >= CONFIG_TURNOS.INICIO_DA_NOITE) return 'Noite';
+            if (horario < CONFIG_TURNOS.FIM_DA_MANHA) return 'Manhã';
+            return 'Tarde';
+        }
+
+        function obterTurnoPeloRelogio() {
+            const agora = obterDataBrasilia();
+            const horaFormatada = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
+            
+            if (horaFormatada < CONFIG_TURNOS.FIM_DA_MANHA) return 'Manhã';
+            if (horaFormatada >= CONFIG_TURNOS.INICIO_DA_NOITE) return 'Noite';
+            return 'Tarde';
+        }
+
+        function determinarEstado(diaAvaliado, saidaStr) {
+            const agora = obterDataBrasilia();
+            const diaAtual = agora.getDay(); 
+            const diaAtualNumerico = diaAtual === 0 ? 7 : diaAtual;
+            const diaAvaliadoNumerico = diaAvaliado === 0 ? 7 : diaAvaliado;
+
+            if (diaAvaliadoNumerico < diaAtualNumerico) return 'liberada';
+            if (diaAvaliadoNumerico > diaAtualNumerico) return 'em_aula';  
+
+            const horaAtual = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
+            const saidaComparacao = saidaStr === '00:00' ? '24:00' : saidaStr;
+            return horaAtual >= saidaComparacao ? 'liberada' : 'em_aula';
+        }
+
+        window.mudarDia = (d) => { diaSelecionado = d; renderizarApp(); };
+        window.mudarTurno = (t) => { turnoSelecionado = t; renderizarApp(); };
+
+        function renderizarApp() {
+            const appRoot = document.getElementById('app-root');
+            const agora = obterDataBrasilia();
+            const diaAtualTexto = chaveDoDia[diaSelecionado];
+            
+            const turmasNoTurno = turmasBase
+                .map(t => ({ ...t, dados: t.grade[diaAtualTexto] }))
+                .filter(t => t.dados && obterTurno(t.dados.saida) === turnoSelecionado)
+                .map(t => ({ ...t, estado: determinarEstado(diaSelecionado, t.dados.saida) }))
+                .sort((a, b) => a.dados.saida.localeCompare(b.dados.saida));
+
+            const turmasLiberadasCount = turmasNoTurno.filter(t => t.estado === 'liberada').length;
+            const configTurno = turnosConfig[turnoSelecionado];
+
+            let html = `
+                <header class="bg-blue-900 text-white pt-4 pb-2 px-4 sm:px-8 shadow-md sticky top-0 z-20">
+                    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <h1 class="text-2xl font-bold flex items-center gap-3">
+                            <span class="w-8 h-8 text-blue-300">${icones.users}</span>
+                            Portaria Escolar
+                        </h1>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-3 py-1.5 rounded-lg border border-blue-800">
+                                <span class="w-4 h-4 text-emerald-400 animate-pulse">${icones.live}</span>
+                                <span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-xs font-medium bg-blue-800/80 px-2 py-1.5 rounded-lg border border-blue-700">
+                                <span class="w-4 h-4 text-green-400">${icones.checkSquare}</span>
+                                <span>${turmasLiberadasCount} / ${turmasNoTurno.length} fora</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto pb-2 no-scrollbar">
+                        ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors ${diaSelecionado === d.valor ? 'bg-white text-blue-900 shadow-sm' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
+                    </div>
+                    
+                    <div class="max-w-7xl mx-auto flex w-full gap-2 overflow-x-auto mt-2 border-t border-blue-800/50 pt-3 pb-1 no-scrollbar">
+                        ${['Manhã', 'Tarde', 'Noite'].map(t => `<button onclick="mudarTurno('${t}')" class="flex-1 min-w-[95px] flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${turnoSelecionado === t ? 'bg-amber-400 text-blue-950 shadow-md ring-2 ring-amber-300 ring-offset-2 ring-offset-blue-900' : 'bg-blue-800/80 text-blue-200 hover:bg-blue-700'}"><span class="w-4 h-4">${icones[t.toLowerCase() === 'manhã' ? 'manha' : t.toLowerCase()]}</span><span>${t}</span></button>`).join('')}
+                    </div>
+                </header>
+                <main class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+            `;
+
+            if (turmasNoTurno.length > 0) {
+                html += `<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">`;
+                turmasNoTurno.forEach(turma => {
+                    const info = statusInfo[turma.estado];
+                    html += `
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col gap-6 ${turma.estado === 'liberada' ? 'bg-green-50/40 border-green-400' : ''}">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-3xl font-black text-slate-800">${turma.nome}</h3>
+                                <div class="text-sm font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-xl border border-red-100 flex items-center gap-2 shadow-sm">
+                                    <span class="w-4 h-4">${icones.clock}</span>${turma.dados.saida}
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-center gap-3 py-5 px-4 border-2 rounded-2xl transition-all shadow-sm ${info.bannerClass}">
+                                <span class="w-6 h-6">${info.iconeSVG}</span>
+                                <span class="text-lg font-black uppercase tracking-widest">${info.nome}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div class="flex flex-col items-center justify-center py-24 text-center opacity-40"><div class="p-5 rounded-full ${configTurno.bg} ${configTurno.cor} mb-4"><span class="w-16 h-16 block">${configTurno.icone}</span></div><h3 class="text-2xl font-black uppercase">Nenhuma turma</h3><p class="font-medium">O turno selecionado está vazio hoje.</p></div>`;
+            }
+
+            html += `</main>`;
+            appRoot.innerHTML = html;
+        }
+
+        window.onload = () => {
+            diaSelecionado = obterDataBrasilia().getDay();
+            turnoSelecionado = obterTurnoPeloRelogio();
+            
+            // Caso seja fim de semana e não haja aulas à Tarde, ele seleciona Tarde por predefinição para não mostrar ecrã vazio logo se não houver lógica.
+            if(turmasBase.filter(t => t.grade[chaveDoDia[diaSelecionado]]).length === 0) {
+                turnoSelecionado = 'Tarde'; 
+            }
+            
+            renderizarApp();
+            setInterval(() => { renderizarApp(); }, 30000); // Atualiza a cada 30 segundos
+        };
+    </script>
+</body>
+</html>
