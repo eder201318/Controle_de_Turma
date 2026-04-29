@@ -7,7 +7,7 @@
     <!-- Carrega o Tailwind CSS para o design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        button {
+        button, a {
             -webkit-tap-highlight-color: transparent;
         }
         svg {
@@ -51,10 +51,11 @@
             bell: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
             bellOff: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
             checkAll: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>`,
-            timer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><path d="M16 8 8 16"/></svg>`
+            timer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><path d="M16 8 8 16"/></svg>`,
+            notification: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8c0-4.4-3.6-8-8-8S6 3.6 6 8c0 2 .8 3.8 2 5.2V20l4-2 4 2v-6.8c1.2-1.4 2-3.2 2-5.2z"/><path d="M14 20v4l-2-2-2 2v-4"/></svg>`
         };
 
-        // Base de dados com horários exatos de saída (Última Aula) e Professor responsável
+        // Base de dados com horários exatos de saída
         const turmasBase = [
             { id: 'S_Terezinha_1', nome: '6º ANO A', grade: { 
                 segunda: { saida: '18:45', prof: 'ING. ARIANE' }, 
@@ -120,7 +121,7 @@
             { valor: 4, nome: 'Qui' }, { valor: 5, nome: 'Sex' }, { valor: 6, nome: 'Sáb' }, { valor: 0, nome: 'Dom' }
         ];
 
-        // Agora temos 3 estados diferentes!
+        // 3 estados diferentes!
         const statusInfo = {
             aguardar: { nome: 'Aguardar (Em Aula)', bannerClass: 'bg-amber-100 text-amber-800 border-amber-300', iconeSVG: icones.clock },
             entregar: { nome: 'ENTREGAR CARTEIRINHAS', bannerClass: 'bg-green-500 text-white border-green-600 shadow-md', iconeSVG: icones.checkCircle },
@@ -131,14 +132,15 @@
         let diaSelecionado; 
         let estadoAnterior = {}; 
         let somPermitido = false; 
+        let notificacoesNativasPermitidas = false; 
 
+        // Relógio Real
         function obterDataBrasilia() {
             const dataLocal = new Date();
             const dataBrasiliaStr = dataLocal.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"});
             return new Date(dataBrasiliaStr);
         }
 
-        // Calcula exatamente 45 minutos antes da hora de saída para descobrir a hora de início
         function calcularInicioUltimaAula(saidaStr) {
             if (!saidaStr || saidaStr === '00:00') return '00:00';
             const partes = saidaStr.split(':');
@@ -153,7 +155,6 @@
             return h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
         }
 
-        // Calcula quantos minutos faltam para começar a última aula
         function calcularTempoParaInicio(inicioStr) {
             const agora = obterDataBrasilia();
             const partes = inicioStr.split(':');
@@ -172,7 +173,6 @@
             return `Em ${diffMinutos} min`;
         }
 
-        // Determina o estado baseado no início e no fim da aula
         function determinarEstado(diaAvaliado, saidaStr) {
             const agora = obterDataBrasilia();
             const diaAtual = agora.getDay() === 0 ? 7 : agora.getDay(); 
@@ -186,17 +186,38 @@
             const saidaComparacao = saidaStr === '00:00' ? '24:00' : saidaStr;
 
             if (horaAtual >= saidaComparacao) return 'liberada'; // Hora de saída já passou
-            if (horaAtual >= inicioUltimaAula && horaAtual < saidaComparacao) return 'entregar'; // Está a decorrer a última aula! HORA DE ENTREGAR!
+            if (horaAtual >= inicioUltimaAula && horaAtual < saidaComparacao) return 'entregar'; // HORA DE ENTREGAR!
             return 'aguardar'; // Ainda não começou a última aula
         }
 
         // =========================================================================
-        // 🔔 FUNÇÕES DE NOTIFICAÇÃO (SONORA E VISUAL)
+        // 🔔 FUNÇÕES DE NOTIFICAÇÃO DO SISTEMA (VIBRAÇÃO E TELA BLOQUEADA)
         // =========================================================================
         function alternarSom() {
             somPermitido = !somPermitido;
             if (somPermitido) tocarSomAlerta(); 
             renderizarApp();
+        }
+
+        function solicitarNotificacaoNativa() {
+            if (!("Notification" in window)) {
+                alert("Este navegador não suporta notificações de sistema.");
+                return;
+            }
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    notificacoesNativasPermitidas = true;
+                    // Teste para ver se vibra no celular
+                    new Notification("Sistema Ativado!", {
+                        body: "Você será avisado sozinho quando a última aula começar.",
+                        icon: "https://cdn-icons-png.flaticon.com/512/3524/3524335.png", 
+                        vibrate: [200, 100, 200]
+                    });
+                    renderizarApp();
+                } else {
+                    alert("Você negou a permissão. O celular não vai apitar bloqueado.");
+                }
+            });
         }
 
         function tocarSomAlerta() {
@@ -216,13 +237,23 @@
                 gain.connect(ctx.destination);
                 osc.start();
                 osc.stop(ctx.currentTime + 1.5);
-            } catch (e) { console.error("Áudio não suportado neste navegador", e); }
+            } catch (e) { console.error("Áudio não suportado", e); }
         }
 
         function mostrarNotificacao(turma) {
+            // AVISO DO CELULAR BLOQUEADO (AUTOMÁTICO)
+            if (notificacoesNativasPermitidas && Notification.permission === "granted") {
+                new Notification(`ENTREGAR: ${turma.nome}`, {
+                    body: `Prof: ${turma.dados.prof} (Saída: ${turma.dados.saida})`,
+                    icon: "https://cdn-icons-png.flaticon.com/512/3524/3524335.png",
+                    vibrate: [300, 100, 300, 100, 300] // Faz o celular vibrar sozinho
+                });
+            }
+
+            // AVISO NA TELA (CASO ESTEJA COM O APLICATIVO ABERTO)
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = 'bg-white border-l-4 border-green-500 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] rounded-r-xl p-5 transform transition-all duration-300 translate-x-full w-80 relative overflow-hidden';
+            toast.className = 'bg-white border-l-4 border-green-500 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] rounded-r-xl p-5 transform transition-all duration-300 translate-x-full w-80 relative overflow-hidden pointer-events-auto';
             
             toast.innerHTML = `
                 <div class="absolute top-0 left-0 w-full h-full bg-green-50 opacity-50 pointer-events-none"></div>
@@ -237,7 +268,6 @@
                             <span class="w-4 h-4 text-slate-500">${icones.book}</span>
                             ${turma.dados.prof}
                         </div>
-                        <p class="text-xs text-slate-500 mt-2">A turma sairá às: <strong>${turma.dados.saida}</strong></p>
                     </div>
                     <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-600 font-bold p-1">&times;</button>
                 </div>
@@ -248,7 +278,7 @@
             setTimeout(() => {
                 toast.classList.add('translate-x-full');
                 toast.addEventListener('transitionend', () => toast.remove());
-            }, 60000); // Fica 1 minuto no ecrã para dar tempo de ver
+            }, 60000); 
         }
         // =========================================================================
 
@@ -268,7 +298,6 @@
                     const novoEstado = determinarEstado(diaSelecionado, t.dados.saida);
                     const estadoAnteriorValor = estadoAnterior[t.id];
                     
-                    // LÓGICA DO ALERTA: Verifica se ENTROU no estado 'entregar' (Início da última aula)
                     if (novoEstado === 'entregar' && estadoAnteriorValor !== 'entregar' && diaSelecionado === agora.getDay()) {
                         mostrarNotificacao({ ...t, estado: novoEstado });
                         disparouAlertaNesteCiclo = true;
@@ -281,26 +310,38 @@
 
             if (disparouAlertaNesteCiclo) tocarSomAlerta();
 
+            if ("Notification" in window && Notification.permission === "granted") {
+                notificacoesNativasPermitidas = true;
+            }
+
             let html = `
                 <header class="bg-blue-900 text-white pt-4 pb-2 px-4 sm:px-8 shadow-md sticky top-0 z-20">
-                    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <h1 class="text-2xl font-bold flex items-center gap-3">
                             <span class="w-8 h-8 text-blue-300">${icones.users}</span>
                             Portaria Escolar - Tarde
                         </h1>
                         <div class="flex flex-wrap items-center gap-2">
+                            ${!notificacoesNativasPermitidas ? `
+                            <button onclick="solicitarNotificacaoNativa()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-sm animate-pulse">
+                                <span class="w-4 h-4">${icones.notification}</span>
+                                <span class="hidden sm:inline">Permitir Celular Vibrar</span>
+                            </button>
+                            ` : ''}
+
                             <button onclick="alternarSom()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${somPermitido ? 'bg-amber-400 text-amber-950 border-amber-300 hover:bg-amber-300 shadow-sm' : 'bg-blue-950/60 text-blue-300 border-blue-800 hover:bg-blue-800'}">
                                 <span class="w-4 h-4">${somPermitido ? icones.bell : icones.bellOff}</span>
-                                <span class="hidden sm:inline">${somPermitido ? 'Alertas Ativados' : 'Ativar Alertas'}</span>
+                                <span class="hidden sm:inline">${somPermitido ? 'Som Ativado' : 'Ativar Som'}</span>
                             </button>
+
                             <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-3 py-1.5 rounded-lg border border-blue-800">
-                                <span class="w-4 h-4 text-emerald-400 animate-pulse">${icones.live}</span>
+                                <span class="w-4 h-4 text-emerald-400">${icones.live}</span>
                                 <span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto pb-2 no-scrollbar">
+
+                    <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto mt-4 pb-2 no-scrollbar">
                         ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors ${diaSelecionado === d.valor ? 'bg-white text-blue-900 shadow-sm' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
                     </div>
                 </header>
@@ -322,8 +363,6 @@
                     }
 
                     const inicioAula = calcularInicioUltimaAula(turma.dados.saida);
-                    
-                    // Cálculo do tempo em falta apenas se o dia selecionado for o de hoje
                     let tempoFalta = null;
                     if (diaSelecionado === agora.getDay() && turma.estado === 'aguardar') {
                         tempoFalta = calcularTempoParaInicio(inicioAula);
@@ -352,9 +391,11 @@
                                 </div>
                             </div>
 
-                            <div class="flex items-center justify-center gap-3 py-4 px-4 border-2 rounded-2xl shadow-sm ${info.bannerClass}">
-                                <span class="w-6 h-6">${info.iconeSVG}</span>
-                                <span class="text-lg font-black tracking-widest">${info.nome}</span>
+                            <div class="flex flex-col gap-2">
+                                <div class="flex items-center justify-center gap-3 py-4 px-4 border-2 rounded-2xl shadow-sm ${info.bannerClass}">
+                                    <span class="w-6 h-6">${info.iconeSVG}</span>
+                                    <span class="text-lg font-black tracking-widest">${info.nome}</span>
+                                </div>
                             </div>
                         </div>
                     `;
