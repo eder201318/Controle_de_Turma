@@ -86,11 +86,11 @@
                 sexta: { saida: '18:00', prof: 'E. REL. CÁSSIA' } 
             }},
             { id: 'S_Terezinha_5', nome: '7º ANO C', grade: { 
-                segunda: { saida: '18:00', prof: 'ARTE. ALACI' }, // HORÁRIO CORRIGIDO DE 17:15 PARA 18:00
+                segunda: { saida: '18:00', prof: 'ARTE. ALACI' }, 
                 terca: { saida: '18:00', prof: 'MAT. DICO' }, 
                 quarta: { saida: '18:45', prof: 'ING. OÉDISSON' }, 
                 quinta: { saida: '18:45', prof: 'PORT. ARIANE' }, 
-                sexta: { saida: '17:15', prof: 'GEO. VALDECÍRIA' } // HORÁRIO CORRIGIDO DE 18:00 PARA 17:15
+                sexta: { saida: '17:15', prof: 'GEO. VALDECÍRIA' } 
             }},
             { id: 'S_Terezinha_6', nome: '8º ANO A', grade: { 
                 segunda: { saida: '18:45', prof: 'GEO. CARLOS' }, 
@@ -112,13 +112,23 @@
                 quarta: { saida: '18:00', prof: 'HIST. ALEXANDRO' }, 
                 quinta: { saida: '18:45', prof: 'E. AM. ALEXANDRO' }, 
                 sexta: { saida: '18:45', prof: 'PORT. ARIANE' } 
+            }},
+            // 👇 TURMA DE TESTE INTELIGENTE (Funciona em qualquer dia da semana)
+            { id: 'teste_simulador', nome: '🛠️ TURMA DE TESTE', grade: { 
+                segunda: { saida: '16:59', prof: 'PROF. SIMULADOR' },
+                terca: { saida: '23:59', prof: 'PROF. SIMULADOR' },
+                quarta: { saida: '16:03', prof: 'PROF. SIMULADOR' },
+                quinta: { saida: '23:59', prof: 'PROF. SIMULADOR' },
+                sexta: { saida: '23:59', prof: 'PROF. SIMULADOR' }
             }}
         ];
 
         const chaveDoDia = { 0: 'domingo', 1: 'segunda', 2: 'terca', 3: 'quarta', 4: 'quinta', 5: 'sexta', 6: 'sabado' };
+        
+        // 🚨 DOMINGO REMOVIDO DA LISTA
         const diasDaSemana = [
             { valor: 1, nome: 'Seg' }, { valor: 2, nome: 'Ter' }, { valor: 3, nome: 'Qua' },
-            { valor: 4, nome: 'Qui' }, { valor: 5, nome: 'Sex' }, { valor: 6, nome: 'Sáb' }, { valor: 0, nome: 'Dom' }
+            { valor: 4, nome: 'Qui' }, { valor: 5, nome: 'Sex' }, { valor: 6, nome: 'Sáb' }
         ];
 
         // 3 estados diferentes!
@@ -133,13 +143,42 @@
         let estadoAnterior = {}; 
         let somPermitido = false; 
         let notificacoesNativasPermitidas = false; 
+        let modoSimulador = false; // Controla se estamos no modo de teste
 
-        // Relógio Real
+        // Relógio Real Normal
         function obterDataBrasilia() {
             const dataLocal = new Date();
             const dataBrasiliaStr = dataLocal.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"});
             return new Date(dataBrasiliaStr);
         }
+
+        // Função para ativar o Teste Imediato baseado no DIA ATUAL
+        window.ativarTeste = () => {
+            modoSimulador = true;
+            
+            const agora = obterDataBrasilia();
+            diaSelecionado = agora.getDay(); // Seleciona automaticamente o dia de hoje (ex: Quarta-feira)
+            
+            // Se hoje for Domingo (0), e o domingo foi removido, a gente previne um erro
+            if (diaSelecionado === 0) {
+                alert("Hoje é Domingo. O sistema não opera aos Domingos!");
+                return;
+            }
+
+            // Para disparar AGORA, a aula tem que terminar daqui a 45 minutos exatos
+            agora.setMinutes(agora.getMinutes() + 45);
+            const novaSaida = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
+
+            // Atualiza a turma de teste com essa hora exata APENAS para o dia de hoje
+            const diaAtualTexto = chaveDoDia[diaSelecionado];
+            const turmaTeste = turmasBase.find(t => t.id === 'teste_simulador');
+            
+            if (turmaTeste && turmaTeste.grade[diaAtualTexto]) {
+                turmaTeste.grade[diaAtualTexto].saida = novaSaida;
+            }
+
+            renderizarApp();
+        };
 
         function calcularInicioUltimaAula(saidaStr) {
             if (!saidaStr || saidaStr === '00:00') return '00:00';
@@ -287,6 +326,12 @@
         function renderizarApp() {
             const appRoot = document.getElementById('app-root');
             const agora = obterDataBrasilia();
+            
+            // Tratamento caso a pessoa abra o site no Domingo
+            if (diaSelecionado === 0) {
+                diaSelecionado = 1; // Força a tela a ir para Segunda-feira
+            }
+
             const diaAtualTexto = chaveDoDia[diaSelecionado];
             
             let disparouAlertaNesteCiclo = false;
@@ -340,6 +385,26 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- 🔥 BARRA DO MODO DE TESTE 🔥 -->
+                    ${modoSimulador ? `
+                    <div class="max-w-7xl mx-auto flex items-center justify-between mt-4 p-3 bg-purple-900/80 rounded-xl border border-purple-500 shadow-inner w-full">
+                        <div class="text-purple-100 text-xs font-bold flex items-center gap-2">
+                            <span class="w-4 h-4 animate-spin">${icones.clock}</span>
+                            MODO DE TESTE ATIVADO PARA HOJE
+                        </div>
+                        <button onclick="window.location.reload()" class="bg-red-500 hover:bg-red-400 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm">
+                            Sair do Teste
+                        </button>
+                    </div>
+                    ` : `
+                    <div class="max-w-7xl mx-auto flex items-center justify-between mt-4 p-2 bg-blue-950/50 rounded-xl border border-blue-800 w-full">
+                        <div class="text-blue-200 text-xs font-medium px-2">Quer testar o alarme agora?</div>
+                        <button onclick="ativarTeste()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm flex items-center gap-1.5">
+                            <span class="w-3 h-3">${icones.bell}</span> Iniciar Teste
+                        </button>
+                    </div>
+                    `}
 
                     <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto mt-4 pb-2 no-scrollbar">
                         ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors ${diaSelecionado === d.valor ? 'bg-white text-blue-900 shadow-sm' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
@@ -411,6 +476,8 @@
 
         window.onload = () => {
             diaSelecionado = obterDataBrasilia().getDay();
+            if(diaSelecionado === 0) diaSelecionado = 1; // Se abrir no domingo, pula para segunda
+            
             renderizarApp();
             setInterval(() => { renderizarApp(); }, 30000); 
         };
