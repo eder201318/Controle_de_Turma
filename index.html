@@ -3,47 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controlo da Portaria - Essencial</title>
+    <title>Controlo da Portaria Escolar</title>
     <!-- Carrega o Tailwind CSS para o design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        button, a {
-            -webkit-tap-highlight-color: transparent;
-        }
-        svg {
-            width: 100%;
-            height: 100%;
-        }
-        /* Esconde a barra de scroll horizontal mas mantém a funcionalidade */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* Animação para o estado de entrega */
+        button, a { -webkit-tap-highlight-color: transparent; }
+        svg { width: 100%; height: 100%; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes pulse-border {
             0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
             100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
         }
-        .pulse-verde {
-            animation: pulse-border 2s infinite;
-        }
+        .pulse-verde { animation: pulse-border 2s infinite; }
     </style>
 </head>
 <body class="bg-slate-100 font-sans pb-8 text-slate-800">
 
     <div id="app-root"></div>
-    <!-- Adiciona o contentor onde as notificações flutuantes vão surgir -->
+    <!-- Contentor onde as notificações flutuantes vão surgir -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-3"></div>
 
     <script>
-        // Ícones em formato SVG
         const icones = {
             users: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-            checkSquare: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
             clock: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
             checkCircle: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
             live: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>`,
@@ -55,142 +39,63 @@
             notification: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8c0-4.4-3.6-8-8-8S6 3.6 6 8c0 2 .8 3.8 2 5.2V20l4-2 4 2v-6.8c1.2-1.4 2-3.2 2-5.2z"/><path d="M14 20v4l-2-2-2 2v-4"/></svg>`
         };
 
-        // Base de dados COM REVISÃO FINAL dos horários exatos de saída
+        // Base de dados com horários rigorosamente oficiais extraídos do documento
         const turmasBase = [
             { id: 'S_Terezinha_1', nome: '6º ANO A', grade: { 
-                segunda: { saida: '18:45', prof: 'ING. ARIANE' }, 
-                terca: { saida: '18:45', prof: 'ARTE MARINETE' }, 
-                quarta: { saida: '18:45', prof: 'MAT. RIBAMAR' }, 
-                quinta: { saida: '18:45', prof: 'MAT. RIBAMAR' }, 
-                sexta: { saida: '18:00', prof: 'PROJETO' } 
+                segunda: { saida: '18:45', prof: 'ING. ARIANE' }, terca: { saida: '18:45', prof: 'ARTE MARINETE' }, quarta: { saida: '18:45', prof: 'MAT. RIBAMAR' }, quinta: { saida: '18:45', prof: 'MAT. RIBAMAR' }, sexta: { saida: '18:00', prof: 'PROJETO' } 
             }},
             { id: 'S_Terezinha_2', nome: '6º ANO B', grade: { 
-                segunda: { saida: '18:45', prof: 'PROJETO' }, 
-                terca: { saida: '18:00', prof: 'E. REL. DECA' }, 
-                quarta: { saida: '18:45', prof: 'GEO. NEREIDA' }, 
-                quinta: { saida: '18:45', prof: 'PORT. DIONE' }, 
-                sexta: { saida: '18:45', prof: 'PORT. DIONE' } 
+                segunda: { saida: '18:45', prof: 'PROJETO' }, terca: { saida: '18:00', prof: 'E. REL. DECA' }, quarta: { saida: '18:45', prof: 'GEO. NEREIDA' }, quinta: { saida: '18:45', prof: 'PORT. DIONE' }, sexta: { saida: '18:45', prof: 'PORT. DIONE' } 
             }},
             { id: 'S_Terezinha_3', nome: '7º ANO A', grade: { 
-                segunda: { saida: '18:45', prof: 'E. AM. ALEXANDRO' }, 
-                terca: { saida: '16:15', prof: 'ING. DIONE' }, 
-                quarta: { saida: '18:45', prof: 'PORT. DIONE' }, 
-                quinta: { saida: '18:45', prof: 'HIST. ANTONIO' }, 
-                sexta: { saida: '18:45', prof: 'CIÊNCIAS' } 
+                segunda: { saida: '18:45', prof: 'E. AM. ALEXANDRO' }, terca: { saida: '16:15', prof: 'ING. DIONE' }, quarta: { saida: '18:45', prof: 'PORT. DIONE' }, quinta: { saida: '18:45', prof: 'HIST. ANTONIO' }, sexta: { saida: '18:45', prof: 'CIEN.' } 
             }},
             { id: 'S_Terezinha_4', nome: '7º ANO B', grade: { 
-                segunda: { saida: '18:45', prof: 'PORT. DIONE' }, 
-                terca: { saida: '18:45', prof: 'MAT. LEILA' }, 
-                quarta: { saida: '18:45', prof: 'CIÊNCIAS' }, 
-                quinta: { saida: '17:15', prof: 'HIST. ANTONIO' }, 
-                sexta: { saida: '18:00', prof: 'E. REL. CÁSSIA' } 
+                segunda: { saida: '18:45', prof: 'PORT. DIONE' }, terca: { saida: '18:45', prof: 'MAT. LEILA' }, quarta: { saida: '18:45', prof: 'CIEN.' }, quinta: { saida: '17:15', prof: 'HIST. ANTONIO' }, sexta: { saida: '18:00', prof: 'E. REL. CÁSSIA' } 
             }},
             { id: 'S_Terezinha_5', nome: '7º ANO C', grade: { 
-                segunda: { saida: '18:00', prof: 'ARTE. ALACI' }, 
-                terca: { saida: '18:00', prof: 'MAT. DICO' }, 
-                quarta: { saida: '18:45', prof: 'ING. OÉDISSON' }, 
-                quinta: { saida: '18:45', prof: 'PORT. ARIANE' }, 
-                sexta: { saida: '17:15', prof: 'GEO. VALDECÍRIA' } 
+                segunda: { saida: '18:00', prof: 'ARTE. ALACI' }, terca: { saida: '18:00', prof: 'MAT. DICO' }, quarta: { saida: '18:45', prof: 'ING. OÉDISSON' }, quinta: { saida: '18:45', prof: 'PORT. ARIANE' }, sexta: { saida: '17:15', prof: 'GEO. VALDECÍRIA' } 
             }},
             { id: 'S_Terezinha_6', nome: '8º ANO A', grade: { 
-                segunda: { saida: '18:45', prof: 'GEO. CARLOS' }, 
-                terca: { saida: '18:00', prof: 'E. AM ALEXANDRO' }, 
-                quarta: { saida: '18:45', prof: 'MAT. LEILA' }, 
-                quinta: { saida: '18:00', prof: 'ING. OÉDISSON' }, 
-                sexta: { saida: '18:00', prof: 'HIST. ALEXANDRO' } 
+                segunda: { saida: '18:45', prof: 'GEO. CARLOS' }, terca: { saida: '18:00', prof: 'E. AM ALEXANDRO' }, quarta: { saida: '18:45', prof: 'MAT. LEILA' }, quinta: { saida: '18:00', prof: 'ING. OÉDISSON' }, sexta: { saida: '18:00', prof: 'HIST. ALEXANDRO' } 
             }},
             { id: 'S_Terezinha_7', nome: '8º ANO B', grade: { 
-                segunda: { saida: '18:00', prof: 'ING. OÉDISSON' }, 
-                terca: { saida: '18:45', prof: 'PORT. ARIANE' }, 
-                quarta: { saida: '18:45', prof: 'PORT. ARIANE' }, 
-                quinta: { saida: '18:45', prof: 'MAT. LEILA' }, 
-                sexta: { saida: '17:15', prof: 'CIEN. HADRIANE' } 
+                segunda: { saida: '18:00', prof: 'ING. OÉDISSON' }, terca: { saida: '18:45', prof: 'PORT. ARIANE' }, quarta: { saida: '18:45', prof: 'PORT. ARIANE' }, quinta: { saida: '18:45', prof: 'MAT. LEILA' }, sexta: { saida: '17:15', prof: 'CIEN. HADRIANE' } 
             }},
             { id: 'S_Terezinha_8', nome: '9º ANO U', grade: { 
-                segunda: { saida: '17:15', prof: 'GEO. CARLOS' }, 
-                terca: { saida: '18:45', prof: 'E. REL. ERIVANA' }, 
-                quarta: { saida: '18:00', prof: 'HIST. ALEXANDRO' }, 
-                quinta: { saida: '18:45', prof: 'E. AM. ALEXANDRO' }, 
-                sexta: { saida: '18:45', prof: 'PORT. ARIANE' } 
-            }},
-            // 👇 TURMA DE TESTE INTELIGENTE (Funciona em qualquer dia da semana)
-            { id: 'teste_simulador', nome: '🛠️ TURMA DE TESTE', grade: { 
-                segunda: { saida: '16:4', prof: 'PROF. SIMULADOR' },
-                terca: { saida: '23:59', prof: 'PROF. SIMULADOR' },
-                quarta: { saida: '16:07', prof: 'PROF. SIMULADOR' },
-                quinta: { saida: '23:59', prof: 'PROF. SIMULADOR' },
-                sexta: { saida: '23:59', prof: 'PROF. SIMULADOR' }
+                segunda: { saida: '17:15', prof: 'GEO. CARLOS' }, terca: { saida: '18:45', prof: 'E. REL. ERIVANA' }, quarta: { saida: '18:00', prof: 'HIST. ALEXANDRO' }, quinta: { saida: '18:45', prof: 'E. AM. ALEXANDRO' }, sexta: { saida: '18:45', prof: 'PORT. ARIANE' } 
             }}
         ];
 
         const chaveDoDia = { 0: 'domingo', 1: 'segunda', 2: 'terca', 3: 'quarta', 4: 'quinta', 5: 'sexta', 6: 'sabado' };
-        
-        // 🚨 DOMINGO REMOVIDO DA LISTA
         const diasDaSemana = [
             { valor: 1, nome: 'Seg' }, { valor: 2, nome: 'Ter' }, { valor: 3, nome: 'Qua' },
-            { valor: 4, nome: 'Qui' }, { valor: 5, nome: 'Sex' }, { valor: 6, nome: 'Sáb' }
+            { valor: 4, nome: 'Qui' }, { valor: 5, nome: 'Sex' }
         ];
 
-        // 3 estados diferentes!
         const statusInfo = {
             aguardar: { nome: 'Aguardar (Em Aula)', bannerClass: 'bg-amber-100 text-amber-800 border-amber-300', iconeSVG: icones.clock },
             entregar: { nome: 'ENTREGAR CARTEIRINHAS', bannerClass: 'bg-green-500 text-white border-green-600 shadow-md', iconeSVG: icones.checkCircle },
             liberada: { nome: 'Alunos Liberados', bannerClass: 'bg-slate-200 text-slate-500 border-slate-300', iconeSVG: icones.checkAll }
         };
 
-        // Variáveis globais
         let diaSelecionado; 
         let estadoAnterior = {}; 
         let somPermitido = false; 
         let notificacoesNativasPermitidas = false; 
-        let modoSimulador = false; // Controla se estamos no modo de teste
 
-        // Relógio Real Normal
+        // Relógio 
         function obterDataBrasilia() {
             const dataLocal = new Date();
             const dataBrasiliaStr = dataLocal.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"});
             return new Date(dataBrasiliaStr);
         }
 
-        // Função para ativar o Teste Imediato baseado no DIA ATUAL
-        window.ativarTeste = () => {
-            modoSimulador = true;
-            
-            const agora = obterDataBrasilia();
-            diaSelecionado = agora.getDay(); // Seleciona automaticamente o dia de hoje (ex: Quarta-feira)
-            
-            // Se hoje for Domingo (0), e o domingo foi removido, a gente previne um erro
-            if (diaSelecionado === 0) {
-                alert("Hoje é Domingo. O sistema não opera aos Domingos!");
-                return;
-            }
-
-            // Para disparar AGORA, a aula tem que terminar daqui a 45 minutos exatos
-            agora.setMinutes(agora.getMinutes() + 45);
-            const novaSaida = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
-
-            // Atualiza a turma de teste com essa hora exata APENAS para o dia de hoje
-            const diaAtualTexto = chaveDoDia[diaSelecionado];
-            const turmaTeste = turmasBase.find(t => t.id === 'teste_simulador');
-            
-            if (turmaTeste && turmaTeste.grade[diaAtualTexto]) {
-                turmaTeste.grade[diaAtualTexto].saida = novaSaida;
-            }
-
-            renderizarApp();
-        };
-
         function calcularInicioUltimaAula(saidaStr) {
             if (!saidaStr || saidaStr === '00:00') return '00:00';
             const partes = saidaStr.split(':');
-            let h = parseInt(partes[0]);
-            let m = parseInt(partes[1]);
-            
-            m -= 45; // Subtrai 45 minutos da aula
-            if (m < 0) {
-                m += 60;
-                h -= 1;
-            }
+            let h = parseInt(partes[0]); let m = parseInt(partes[1]);
+            m -= 45; if (m < 0) { m += 60; h -= 1; }
             return h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
         }
 
@@ -199,14 +104,11 @@
             const partes = inicioStr.split(':');
             const dataInicio = new Date(agora);
             dataInicio.setHours(parseInt(partes[0]), parseInt(partes[1]), 0, 0);
-
             const diffMs = dataInicio - agora;
-            if (diffMs <= 0) return null; // Já começou
-
+            if (diffMs <= 0) return null;
             const diffMinutos = Math.ceil(diffMs / 60000);
             if (diffMinutos > 60) {
-                const horas = Math.floor(diffMinutos / 60);
-                const minutos = diffMinutos % 60;
+                const horas = Math.floor(diffMinutos / 60); const minutos = diffMinutos % 60;
                 return `Em ${horas}h ${minutos}m`;
             }
             return `Em ${diffMinutos} min`;
@@ -216,21 +118,18 @@
             const agora = obterDataBrasilia();
             const diaAtual = agora.getDay() === 0 ? 7 : agora.getDay(); 
             const diaAvaliadoNumerico = diaAvaliado === 0 ? 7 : diaAvaliado;
-
             if (diaAvaliadoNumerico < diaAtual) return 'liberada';
             if (diaAvaliadoNumerico > diaAtual) return 'aguardar';  
-
             const horaAtual = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
             const inicioUltimaAula = calcularInicioUltimaAula(saidaStr);
             const saidaComparacao = saidaStr === '00:00' ? '24:00' : saidaStr;
-
-            if (horaAtual >= saidaComparacao) return 'liberada'; // Hora de saída já passou
-            if (horaAtual >= inicioUltimaAula && horaAtual < saidaComparacao) return 'entregar'; // HORA DE ENTREGAR!
-            return 'aguardar'; // Ainda não começou a última aula
+            if (horaAtual >= saidaComparacao) return 'liberada'; 
+            if (horaAtual >= inicioUltimaAula && horaAtual < saidaComparacao) return 'entregar'; 
+            return 'aguardar'; 
         }
 
         // =========================================================================
-        // 🔔 FUNÇÕES DE NOTIFICAÇÃO DO SISTEMA (VIBRAÇÃO E TELA BLOQUEADA)
+        // 🔔 NOTIFICAÇÕES (SOM E CELULAR) - TOTALMENTE OFFLINE
         // =========================================================================
         function alternarSom() {
             somPermitido = !somPermitido;
@@ -246,7 +145,6 @@
             Notification.requestPermission().then(permission => {
                 if (permission === "granted") {
                     notificacoesNativasPermitidas = true;
-                    // Teste para ver se vibra no celular
                     new Notification("Sistema Ativado!", {
                         body: "Você será avisado sozinho quando a última aula começar.",
                         icon: "https://cdn-icons-png.flaticon.com/512/3524/3524335.png", 
@@ -254,7 +152,7 @@
                     });
                     renderizarApp();
                 } else {
-                    alert("Você negou a permissão. O celular não vai apitar bloqueado.");
+                    alert("Você negou a permissão. O celular não vai apitar com a tela bloqueada.");
                 }
             });
         }
@@ -264,76 +162,56 @@
             try {
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 if (!AudioContext) return;
-                const ctx = new AudioContext();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
+                const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
                 osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.1); 
                 gain.gain.setValueAtTime(1, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); 
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 1.5);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 1.5);
             } catch (e) { console.error("Áudio não suportado", e); }
         }
 
         function mostrarNotificacao(turma) {
-            // AVISO DO CELULAR BLOQUEADO (AUTOMÁTICO)
+            // AVISO DO CELULAR BLOQUEADO (AUTOMÁTICO VIBRAÇÃO)
             if (notificacoesNativasPermitidas && Notification.permission === "granted") {
                 new Notification(`ENTREGAR: ${turma.nome}`, {
                     body: `Prof: ${turma.dados.prof} (Saída: ${turma.dados.saida})`,
                     icon: "https://cdn-icons-png.flaticon.com/512/3524/3524335.png",
-                    vibrate: [300, 100, 300, 100, 300] // Faz o celular vibrar sozinho
+                    vibrate: [300, 100, 300, 100, 300] // Faz o celular vibrar
                 });
             }
 
-            // AVISO NA TELA (CASO ESTEJA COM O APLICATIVO ABERTO)
+            // AVISO VISUAL NA TELA (TOAST)
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'bg-white border-l-4 border-green-500 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] rounded-r-xl p-5 transform transition-all duration-300 translate-x-full w-80 relative overflow-hidden pointer-events-auto';
-            
             toast.innerHTML = `
                 <div class="absolute top-0 left-0 w-full h-full bg-green-50 opacity-50 pointer-events-none"></div>
                 <div class="relative flex items-start gap-3">
-                    <div class="text-green-600 mt-1 w-8 h-8 flex-shrink-0 animate-bounce">
-                        ${icones.checkCircle}
-                    </div>
+                    <div class="text-green-600 mt-1 w-8 h-8 flex-shrink-0 animate-bounce">${icones.checkCircle}</div>
                     <div class="flex-1">
                         <h4 class="font-black text-green-700 text-sm tracking-wide">ENTREGAR CARTEIRINHAS!</h4>
                         <p class="text-sm text-slate-700 mt-1">A última aula do <strong>${turma.nome}</strong> começou agora.</p>
                         <div class="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white px-2 py-1.5 rounded border shadow-sm uppercase w-full">
-                            <span class="w-4 h-4 text-slate-500">${icones.book}</span>
-                            ${turma.dados.prof}
+                            <span class="w-4 h-4 text-slate-500">${icones.book}</span>${turma.dados.prof}
                         </div>
                     </div>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-slate-600 font-bold p-1">&times;</button>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 font-bold p-1">&times;</button>
                 </div>
             `;
             container.appendChild(toast);
-            
             requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                toast.addEventListener('transitionend', () => toast.remove());
-            }, 60000); 
+            setTimeout(() => { toast.classList.add('translate-x-full'); toast.addEventListener('transitionend', () => toast.remove()); }, 60000); 
         }
-        // =========================================================================
 
         window.mudarDia = (d) => { diaSelecionado = d; renderizarApp(); };
 
         function renderizarApp() {
             const appRoot = document.getElementById('app-root');
             const agora = obterDataBrasilia();
-            
-            // Tratamento caso a pessoa abra o site no Domingo
-            if (diaSelecionado === 0) {
-                diaSelecionado = 1; // Força a tela a ir para Segunda-feira
-            }
-
+            if (diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; // Fim de semana vai para segunda
             const diaAtualTexto = chaveDoDia[diaSelecionado];
-            
             let disparouAlertaNesteCiclo = false;
 
             const turmasNoTurno = turmasBase
@@ -342,13 +220,11 @@
                 .map(t => {
                     const novoEstado = determinarEstado(diaSelecionado, t.dados.saida);
                     const estadoAnteriorValor = estadoAnterior[t.id];
-                    
                     if (novoEstado === 'entregar' && estadoAnteriorValor !== 'entregar' && diaSelecionado === agora.getDay()) {
                         mostrarNotificacao({ ...t, estado: novoEstado });
                         disparouAlertaNesteCiclo = true;
                     }
                     estadoAnterior[t.id] = novoEstado; 
-
                     return { ...t, estado: novoEstado };
                 })
                 .sort((a, b) => a.dados.saida.localeCompare(b.dados.saida));
@@ -362,10 +238,7 @@
             let html = `
                 <header class="bg-blue-900 text-white pt-4 pb-2 px-4 sm:px-8 shadow-md sticky top-0 z-20">
                     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <h1 class="text-2xl font-bold flex items-center gap-3">
-                            <span class="w-8 h-8 text-blue-300">${icones.users}</span>
-                            Portaria Escolar - Tarde
-                        </h1>
+                        <h1 class="text-2xl font-bold flex items-center gap-3"><span class="w-8 h-8 text-blue-300">${icones.users}</span> Portaria Escolar</h1>
                         <div class="flex flex-wrap items-center gap-2">
                             ${!notificacoesNativasPermitidas ? `
                             <button onclick="solicitarNotificacaoNativa()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-sm animate-pulse">
@@ -373,38 +246,14 @@
                                 <span class="hidden sm:inline">Permitir Celular Vibrar</span>
                             </button>
                             ` : ''}
-
-                            <button onclick="alternarSom()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${somPermitido ? 'bg-amber-400 text-amber-950 border-amber-300 hover:bg-amber-300 shadow-sm' : 'bg-blue-950/60 text-blue-300 border-blue-800 hover:bg-blue-800'}">
-                                <span class="w-4 h-4">${somPermitido ? icones.bell : icones.bellOff}</span>
-                                <span class="hidden sm:inline">${somPermitido ? 'Som Ativado' : 'Ativar Som'}</span>
+                            <button onclick="alternarSom()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${somPermitido ? 'bg-amber-400 text-amber-950 border-amber-300' : 'bg-blue-950/60 text-blue-300 border-blue-800'}">
+                                <span class="w-4 h-4">${somPermitido ? icones.bell : icones.bellOff}</span><span class="hidden sm:inline">${somPermitido ? 'Som Ativado' : 'Ativar Som'}</span>
                             </button>
-
                             <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-3 py-1.5 rounded-lg border border-blue-800">
-                                <span class="w-4 h-4 text-emerald-400">${icones.live}</span>
-                                <span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
+                                <span class="w-4 h-4 text-emerald-400">${icones.live}</span><span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
                             </div>
                         </div>
                     </div>
-
-                    <!-- 🔥 BARRA DO MODO DE TESTE 🔥 -->
-                    ${modoSimulador ? `
-                    <div class="max-w-7xl mx-auto flex items-center justify-between mt-4 p-3 bg-purple-900/80 rounded-xl border border-purple-500 shadow-inner w-full">
-                        <div class="text-purple-100 text-xs font-bold flex items-center gap-2">
-                            <span class="w-4 h-4 animate-spin">${icones.clock}</span>
-                            MODO DE TESTE ATIVADO PARA HOJE
-                        </div>
-                        <button onclick="window.location.reload()" class="bg-red-500 hover:bg-red-400 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm">
-                            Sair do Teste
-                        </button>
-                    </div>
-                    ` : `
-                    <div class="max-w-7xl mx-auto flex items-center justify-between mt-4 p-2 bg-blue-950/50 rounded-xl border border-blue-800 w-full">
-                        <div class="text-blue-200 text-xs font-medium px-2">Quer testar o alarme agora?</div>
-                        <button onclick="ativarTeste()" class="bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm flex items-center gap-1.5">
-                            <span class="w-3 h-3">${icones.bell}</span> Iniciar Teste
-                        </button>
-                    </div>
-                    `}
 
                     <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto mt-4 pb-2 no-scrollbar">
                         ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors ${diaSelecionado === d.valor ? 'bg-white text-blue-900 shadow-sm' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
@@ -417,21 +266,10 @@
                 html += `<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">`;
                 turmasNoTurno.forEach(turma => {
                     const info = statusInfo[turma.estado];
-                    
-                    let cardClass = '';
-                    if(turma.estado === 'entregar') {
-                        cardClass = 'bg-white border-green-400 ring-2 ring-green-400 shadow-lg pulse-verde';
-                    } else if (turma.estado === 'liberada') {
-                        cardClass = 'bg-slate-50 border-slate-200 opacity-60';
-                    } else {
-                        cardClass = 'bg-white border-slate-200 shadow-sm';
-                    }
-
+                    let cardClass = turma.estado === 'entregar' ? 'bg-white border-green-400 ring-2 ring-green-400 shadow-lg pulse-verde' : (turma.estado === 'liberada' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 shadow-sm');
                     const inicioAula = calcularInicioUltimaAula(turma.dados.saida);
                     let tempoFalta = null;
-                    if (diaSelecionado === agora.getDay() && turma.estado === 'aguardar') {
-                        tempoFalta = calcularTempoParaInicio(inicioAula);
-                    }
+                    if (diaSelecionado === agora.getDay() && turma.estado === 'aguardar') tempoFalta = calcularTempoParaInicio(inicioAula);
 
                     html += `
                         <div class="rounded-2xl transition-all p-6 flex flex-col gap-6 ${cardClass}">
@@ -439,8 +277,7 @@
                                 <div>
                                     <h3 class="text-3xl font-black text-slate-800">${turma.nome}</h3>
                                     <div class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm uppercase">
-                                        <span class="w-4 h-4 text-slate-500">${icones.book}</span>
-                                        ${turma.dados.prof}
+                                        <span class="w-4 h-4 text-slate-500">${icones.book}</span>${turma.dados.prof}
                                     </div>
                                 </div>
                                 <div class="flex flex-col items-end gap-1">
@@ -448,36 +285,27 @@
                                     <div class="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm">
                                         <span class="w-4 h-4 text-blue-600">${icones.clock}</span> ${inicioAula} - ${turma.dados.saida}
                                     </div>
-                                    ${tempoFalta ? `
-                                        <div class="mt-1 text-xs font-bold text-amber-600 flex items-center gap-1">
-                                            <span class="w-3 h-3">${icones.timer}</span> ${tempoFalta}
-                                        </div>
-                                    ` : ''}
+                                    ${tempoFalta ? `<div class="mt-1 text-xs font-bold text-amber-600 flex items-center gap-1"><span class="w-3 h-3">${icones.timer}</span> ${tempoFalta}</div>` : ''}
                                 </div>
                             </div>
-
                             <div class="flex flex-col gap-2">
                                 <div class="flex items-center justify-center gap-3 py-4 px-4 border-2 rounded-2xl shadow-sm ${info.bannerClass}">
-                                    <span class="w-6 h-6">${info.iconeSVG}</span>
-                                    <span class="text-lg font-black tracking-widest">${info.nome}</span>
+                                    <span class="w-6 h-6">${info.iconeSVG}</span><span class="text-lg font-black tracking-widest">${info.nome}</span>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 html += `</div>`;
             } else {
                 html += `<div class="flex flex-col items-center justify-center py-24 text-center opacity-40"><h3 class="text-2xl font-black uppercase">Nenhuma turma</h3><p class="font-medium">O turno selecionado está vazio hoje.</p></div>`;
             }
-
             html += `</main>`;
             appRoot.innerHTML = html;
         }
 
         window.onload = () => {
             diaSelecionado = obterDataBrasilia().getDay();
-            if(diaSelecionado === 0) diaSelecionado = 1; // Se abrir no domingo, pula para segunda
-            
+            if(diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; // Se for fim de semana, abre na segunda
             renderizarApp();
             setInterval(() => { renderizarApp(); }, 30000); 
         };
