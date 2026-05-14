@@ -22,8 +22,6 @@
 <body class="bg-slate-100 font-sans pb-8 text-slate-800">
 
     <div id="app-root"></div>
-    <!-- Contentor onde as notificações flutuantes vão surgir -->
-    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-3"></div>
 
     <script>
         const icones = {
@@ -54,7 +52,7 @@
                 segunda: { saida: '18:45', prof: 'PORT. DIONE' }, terca: { saida: '18:45', prof: 'MAT. LEILA' }, quarta: { saida: '18:45', prof: 'CIEN.' }, quinta: { saida: '17:15', prof: 'HIST. ANTONIO' }, sexta: { saida: '18:00', prof: 'E. REL. CÁSSIA' } 
             }},
             { id: 'S_Terezinha_5', nome: '7º ANO C', grade: { 
-                segunda: { saida: '18:00', prof: 'ARTE. ALACI' }, terca: { saida: '18:00', prof: 'MAT. DICO' }, quarta: { saida: '18:45', prof: 'ING. OÉDISSON' }, quinta: { saida: '18:45', prof: 'PORT. ARIANE' }, sexta: { saida: '17:15', prof: 'GEO. VALDECÍRIA' } 
+                segunda: { saida: '18:00', prof: 'ARTE. ALACI' }, terca: { saida: '18:00', prof: 'MAT. DICO' }, quarta: { saida: '18:45', prof: 'ING. OÉDISSON' }, quinta: { saida: '18:45', prof: 'PORT. ARIANE' }, sexta: { saida: '18:00', prof: 'GEO. VALDECÍRIA' } 
             }},
             { id: 'S_Terezinha_6', nome: '8º ANO A', grade: { 
                 segunda: { saida: '18:45', prof: 'GEO. CARLOS' }, terca: { saida: '18:00', prof: 'E. AM ALEXANDRO' }, quarta: { saida: '18:45', prof: 'MAT. LEILA' }, quinta: { saida: '18:00', prof: 'ING. OÉDISSON' }, sexta: { saida: '18:00', prof: 'HIST. ALEXANDRO' } 
@@ -80,9 +78,6 @@
         };
 
         let diaSelecionado; 
-        let estadoAnterior = {}; 
-        let somPermitido = false; 
-        let notificacoesNativasPermitidas = false; 
 
         // Relógio 
         function obterDataBrasilia() {
@@ -128,83 +123,6 @@
             return 'aguardar'; 
         }
 
-        // =========================================================================
-        // 🔔 NOTIFICAÇÕES (SOM E CELULAR) - TOTALMENTE OFFLINE
-        // =========================================================================
-        function alternarSom() {
-            somPermitido = !somPermitido;
-            if (somPermitido) tocarSomAlerta(); 
-            renderizarApp();
-        }
-
-        function solicitarNotificacaoNativa() {
-            if (!("Notification" in window)) {
-                alert("Este navegador não suporta notificações de sistema.");
-                return;
-            }
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    notificacoesNativasPermitidas = true;
-                    new Notification("Sistema Ativado!", {
-                        body: "Você será avisado sozinho quando a última aula começar.",
-                        icon: "https://cdn-icons-png.flaticon.com/512/3524/3524335.png", 
-                        vibrate: [200, 100, 200]
-                    });
-                    renderizarApp();
-                } else {
-                    alert("Você negou a permissão. O celular não vai apitar com a tela bloqueada.");
-                }
-            });
-        }
-
-        function tocarSomAlerta() {
-            if (!somPermitido) return;
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
-                osc.type = 'sine'; osc.frequency.setValueAtTime(523.25, ctx.currentTime); 
-                osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.1); 
-                gain.gain.setValueAtTime(1, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5); 
-                osc.connect(gain); gain.connect(ctx.destination);
-                osc.start(); osc.stop(ctx.currentTime + 1.5);
-            } catch (e) { console.error("Áudio não suportado", e); }
-        }
-
-        function mostrarNotificacao(turma) {
-            // AVISO DO CELULAR BLOQUEADO (AUTOMÁTICO VIBRAÇÃO)
-            if (notificacoesNativasPermitidas && Notification.permission === "granted") {
-                new Notification(`ENTREGAR: ${turma.nome}`, {
-                    body: `Prof: ${turma.dados.prof} (Saída: ${turma.dados.saida})`,
-                    icon: "https://cdn-icons-png.flaticon.com/512/3524/3524335.png",
-                    vibrate: [300, 100, 300, 100, 300] // Faz o celular vibrar
-                });
-            }
-
-            // AVISO VISUAL NA TELA (TOAST)
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'bg-white border-l-4 border-green-500 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.3)] rounded-r-xl p-5 transform transition-all duration-300 translate-x-full w-80 relative overflow-hidden pointer-events-auto';
-            toast.innerHTML = `
-                <div class="absolute top-0 left-0 w-full h-full bg-green-50 opacity-50 pointer-events-none"></div>
-                <div class="relative flex items-start gap-3">
-                    <div class="text-green-600 mt-1 w-8 h-8 flex-shrink-0 animate-bounce">${icones.checkCircle}</div>
-                    <div class="flex-1">
-                        <h4 class="font-black text-green-700 text-sm tracking-wide">ENTREGAR CARTEIRINHAS!</h4>
-                        <p class="text-sm text-slate-700 mt-1">A última aula do <strong>${turma.nome}</strong> começou agora.</p>
-                        <div class="mt-2.5 inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white px-2 py-1.5 rounded border shadow-sm uppercase w-full">
-                            <span class="w-4 h-4 text-slate-500">${icones.book}</span>${turma.dados.prof}
-                        </div>
-                    </div>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 font-bold p-1">&times;</button>
-                </div>
-            `;
-            container.appendChild(toast);
-            requestAnimationFrame(() => toast.classList.remove('translate-x-full'));
-            setTimeout(() => { toast.classList.add('translate-x-full'); toast.addEventListener('transitionend', () => toast.remove()); }, 60000); 
-        }
-
         window.mudarDia = (d) => { diaSelecionado = d; renderizarApp(); };
 
         function renderizarApp() {
@@ -212,43 +130,21 @@
             const agora = obterDataBrasilia();
             if (diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; // Fim de semana vai para segunda
             const diaAtualTexto = chaveDoDia[diaSelecionado];
-            let disparouAlertaNesteCiclo = false;
 
             const turmasNoTurno = turmasBase
                 .map(t => ({ ...t, dados: t.grade[diaAtualTexto] }))
                 .filter(t => t.dados) 
                 .map(t => {
                     const novoEstado = determinarEstado(diaSelecionado, t.dados.saida);
-                    const estadoAnteriorValor = estadoAnterior[t.id];
-                    if (novoEstado === 'entregar' && estadoAnteriorValor !== 'entregar' && diaSelecionado === agora.getDay()) {
-                        mostrarNotificacao({ ...t, estado: novoEstado });
-                        disparouAlertaNesteCiclo = true;
-                    }
-                    estadoAnterior[t.id] = novoEstado; 
                     return { ...t, estado: novoEstado };
                 })
                 .sort((a, b) => a.dados.saida.localeCompare(b.dados.saida));
-
-            if (disparouAlertaNesteCiclo) tocarSomAlerta();
-
-            if ("Notification" in window && Notification.permission === "granted") {
-                notificacoesNativasPermitidas = true;
-            }
 
             let html = `
                 <header class="bg-blue-900 text-white pt-4 pb-2 px-4 sm:px-8 shadow-md sticky top-0 z-20">
                     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <h1 class="text-2xl font-bold flex items-center gap-3"><span class="w-8 h-8 text-blue-300">${icones.users}</span> Portaria Escolar</h1>
                         <div class="flex flex-wrap items-center gap-2">
-                            ${!notificacoesNativasPermitidas ? `
-                            <button onclick="solicitarNotificacaoNativa()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500 shadow-sm animate-pulse">
-                                <span class="w-4 h-4">${icones.notification}</span>
-                                <span class="hidden sm:inline">Permitir Celular Vibrar</span>
-                            </button>
-                            ` : ''}
-                            <button onclick="alternarSom()" class="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${somPermitido ? 'bg-amber-400 text-amber-950 border-amber-300' : 'bg-blue-950/60 text-blue-300 border-blue-800'}">
-                                <span class="w-4 h-4">${somPermitido ? icones.bell : icones.bellOff}</span><span class="hidden sm:inline">${somPermitido ? 'Som Ativado' : 'Ativar Som'}</span>
-                            </button>
                             <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-3 py-1.5 rounded-lg border border-blue-800">
                                 <span class="w-4 h-4 text-emerald-400">${icones.live}</span><span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
                             </div>
