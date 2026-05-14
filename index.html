@@ -139,25 +139,25 @@
                 .sort((a, b) => a.dados.saida.localeCompare(b.dados.saida));
 
             let html = `
-                <header class="bg-blue-900 text-white pt-4 pb-2 px-4 sm:px-8 shadow-md sticky top-0 z-20">
-                    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <h1 class="text-2xl font-bold flex items-center gap-3"><span class="w-8 h-8 text-blue-300">${icones.users}</span> Portaria Escolar</h1>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-4 py-2 rounded-lg border border-blue-800 shadow-inner">
-                                <span class="w-4 h-4 text-emerald-400">${icones.live}</span><span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
+                <header class="bg-blue-900 text-white pt-4 pb-2 px-3 sm:px-8 shadow-md sticky top-0 z-20">
+                    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+                        <h1 class="text-xl sm:text-2xl font-bold flex items-center gap-3"><span class="w-6 h-6 sm:w-8 sm:h-8 text-blue-300">${icones.users}</span> Portaria Escolar</h1>
+                        <div class="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto">
+                            <div class="flex items-center gap-2 text-xs sm:text-sm font-bold bg-blue-950/60 px-4 py-2 rounded-lg border border-blue-800 shadow-inner">
+                                <span class="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400">${icones.live}</span><span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto mt-4 pb-2 no-scrollbar">
-                        ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors shadow-sm ${diaSelecionado === d.valor ? 'bg-white text-blue-900' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
+                        ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[50px] sm:min-w-[55px] py-2 px-1 rounded-lg text-xs sm:text-sm font-bold transition-colors shadow-sm ${diaSelecionado === d.valor ? 'bg-white text-blue-900' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
                     </div>
                 </header>
-                <main class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+                <main class="p-3 sm:p-6 lg:p-8 max-w-7xl mx-auto">
             `;
 
             if (turmasNoTurno.length > 0) {
-                html += `<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">`;
+                html += `<div class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4 sm:gap-5">`;
                 turmasNoTurno.forEach(turma => {
                     const info = statusInfo[turma.estado];
                     
@@ -179,32 +179,32 @@
                     if (diaSelecionado === agora.getDay() && turma.estado === 'aguardar') tempoFalta = calcularTempoParaInicio(inicioAula);
 
                     html += `
-                        <div class="rounded-2xl transition-all duration-500 p-6 flex flex-col gap-6 ${cardClass}">
+                        <div class="rounded-2xl transition-all duration-500 p-4 sm:p-6 flex flex-col gap-4 sm:gap-6 ${cardClass}">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h3 class="text-3xl font-black text-slate-800 tracking-tight">${turma.nome}</h3>
-                                    <div class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm uppercase">
-                                        <span class="w-4 h-4 text-slate-500">${icones.book}</span>${turma.dados.prof}
+                                    <h3 class="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">${turma.nome}</h3>
+                                    <div class="mt-1 sm:mt-2 inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-600 bg-slate-100 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-slate-200 shadow-sm uppercase">
+                                        <span class="w-3 h-3 sm:w-4 sm:h-4 text-slate-500">${icones.book}</span>${turma.dados.prof}
                                     </div>
                                 </div>
                                 <div class="flex flex-col items-end gap-1">
-                                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Última Aula:</div>
-                                    <div class="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm">
-                                        <span class="w-4 h-4 text-blue-600">${icones.clock}</span> ${inicioAula} - ${turma.dados.saida}
+                                    <div class="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Última Aula:</div>
+                                    <div class="text-xs sm:text-sm font-bold text-slate-700 bg-slate-100 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border border-slate-200 flex items-center gap-1 sm:gap-2 shadow-sm">
+                                        <span class="w-3 h-3 sm:w-4 sm:h-4 text-blue-600">${icones.clock}</span> ${inicioAula} - ${turma.dados.saida}
                                     </div>
-                                    ${tempoFalta ? `<div class="mt-1.5 text-xs font-bold text-amber-600 flex items-center gap-1"><span class="w-3 h-3">${icones.timer}</span> ${tempoFalta}</div>` : ''}
+                                    ${tempoFalta ? `<div class="mt-1 sm:mt-1.5 text-[10px] sm:text-xs font-bold text-amber-600 flex items-center gap-1"><span class="w-3 h-3">${icones.timer}</span> ${tempoFalta}</div>` : ''}
                                 </div>
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <div class="flex items-center justify-center gap-3 py-4 px-4 border-2 rounded-2xl shadow-sm ${info.bannerClass}">
-                                    <span class="w-6 h-6">${info.iconeSVG}</span><span class="text-lg font-black tracking-widest">${info.nome}</span>
+                            <div class="flex flex-col gap-2 mt-auto">
+                                <div class="flex items-center justify-center gap-2 sm:gap-3 py-3 sm:py-4 px-2 sm:px-4 border-2 rounded-2xl shadow-sm ${info.bannerClass}">
+                                    <span class="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0">${info.iconeSVG}</span><span class="text-sm sm:text-lg font-black tracking-wide sm:tracking-widest text-center leading-tight">${info.nome}</span>
                                 </div>
                             </div>
                         </div>`;
                 });
                 html += `</div>`;
             } else {
-                html += `<div class="flex flex-col items-center justify-center py-24 text-center opacity-40"><h3 class="text-2xl font-black uppercase">Nenhuma turma</h3><p class="font-medium">O turno selecionado está vazio hoje.</p></div>`;
+                html += `<div class="flex flex-col items-center justify-center py-24 text-center opacity-40"><h3 class="text-xl sm:text-2xl font-black uppercase">Nenhuma turma</h3><p class="font-medium text-sm sm:text-base mt-2">O turno selecionado está vazio hoje.</p></div>`;
             }
             html += `</main>`;
             appRoot.innerHTML = html;
