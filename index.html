@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controlo da Portaria Escolar</title>
-    <!-- Carrega o Tailwind CSS para o design -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         button, a { -webkit-tap-highlight-color: transparent; }
@@ -30,14 +29,11 @@
             checkCircle: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
             live: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>`,
             book: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>`,
-            bell: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
-            bellOff: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
             checkAll: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 7 17l-5-5"/><path d="m22 10-7.5 7.5L13 16"/></svg>`,
-            timer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><path d="M16 8 8 16"/></svg>`,
-            notification: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8c0-4.4-3.6-8-8-8S6 3.6 6 8c0 2 .8 3.8 2 5.2V20l4-2 4 2v-6.8c1.2-1.4 2-3.2 2-5.2z"/><path d="M14 20v4l-2-2-2 2v-4"/></svg>`
+            timer: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12"/><path d="M16 8 8 16"/></svg>`
         };
 
-        // Base de dados com horários rigorosamente oficiais extraídos do documento
+        // Base de dados com horários rigorosamente oficiais
         const turmasBase = [
             { id: 'S_Terezinha_1', nome: '6º ANO A', grade: { 
                 segunda: { saida: '18:45', prof: 'ING. ARIANE' }, terca: { saida: '18:45', prof: 'ARTE MARINETE' }, quarta: { saida: '18:45', prof: 'MAT. RIBAMAR' }, quinta: { saida: '18:45', prof: 'MAT. RIBAMAR' }, sexta: { saida: '18:00', prof: 'PROJETO' } 
@@ -72,14 +68,13 @@
         ];
 
         const statusInfo = {
-            aguardar: { nome: 'Aguardar (Em Aula)', bannerClass: 'bg-amber-100 text-amber-800 border-amber-300', iconeSVG: icones.clock },
+            aguardar: { nome: 'Aguardar (Em Aula)', bannerClass: 'bg-amber-200 text-amber-900 border-amber-300', iconeSVG: icones.clock },
             entregar: { nome: 'ENTREGAR CARTEIRINHAS', bannerClass: 'bg-green-500 text-white border-green-600 shadow-md', iconeSVG: icones.checkCircle },
             liberada: { nome: 'Alunos Liberados', bannerClass: 'bg-slate-200 text-slate-500 border-slate-300', iconeSVG: icones.checkAll }
         };
 
         let diaSelecionado; 
 
-        // Relógio 
         function obterDataBrasilia() {
             const dataLocal = new Date();
             const dataBrasiliaStr = dataLocal.toLocaleString("en-US", {timeZone: "America/Sao_Paulo"});
@@ -113,11 +108,14 @@
             const agora = obterDataBrasilia();
             const diaAtual = agora.getDay() === 0 ? 7 : agora.getDay(); 
             const diaAvaliadoNumerico = diaAvaliado === 0 ? 7 : diaAvaliado;
+            
             if (diaAvaliadoNumerico < diaAtual) return 'liberada';
             if (diaAvaliadoNumerico > diaAtual) return 'aguardar';  
+            
             const horaAtual = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
             const inicioUltimaAula = calcularInicioUltimaAula(saidaStr);
             const saidaComparacao = saidaStr === '00:00' ? '24:00' : saidaStr;
+            
             if (horaAtual >= saidaComparacao) return 'liberada'; 
             if (horaAtual >= inicioUltimaAula && horaAtual < saidaComparacao) return 'entregar'; 
             return 'aguardar'; 
@@ -128,7 +126,7 @@
         function renderizarApp() {
             const appRoot = document.getElementById('app-root');
             const agora = obterDataBrasilia();
-            if (diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; // Fim de semana vai para segunda
+            if (diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; 
             const diaAtualTexto = chaveDoDia[diaSelecionado];
 
             const turmasNoTurno = turmasBase
@@ -145,14 +143,14 @@
                     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <h1 class="text-2xl font-bold flex items-center gap-3"><span class="w-8 h-8 text-blue-300">${icones.users}</span> Portaria Escolar</h1>
                         <div class="flex flex-wrap items-center gap-2">
-                            <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-3 py-1.5 rounded-lg border border-blue-800">
+                            <div class="flex items-center gap-2 text-sm font-bold bg-blue-950/60 px-4 py-2 rounded-lg border border-blue-800 shadow-inner">
                                 <span class="w-4 h-4 text-emerald-400">${icones.live}</span><span class="tracking-widest text-emerald-50">${agora.toLocaleTimeString('pt-BR', { hour12: false })}</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="max-w-7xl mx-auto flex w-full gap-1 sm:gap-2 overflow-x-auto mt-4 pb-2 no-scrollbar">
-                        ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors ${diaSelecionado === d.valor ? 'bg-white text-blue-900 shadow-sm' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
+                        ${diasDaSemana.map(d => `<button onclick="mudarDia(${d.valor})" class="flex-1 min-w-[55px] py-2 px-1 rounded-lg text-sm font-bold transition-colors shadow-sm ${diaSelecionado === d.valor ? 'bg-white text-blue-900' : 'bg-blue-800 text-blue-100 hover:bg-blue-700'}">${d.nome}</button>`).join('')}
                     </div>
                 </header>
                 <main class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -162,26 +160,39 @@
                 html += `<div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">`;
                 turmasNoTurno.forEach(turma => {
                     const info = statusInfo[turma.estado];
-                    let cardClass = turma.estado === 'entregar' ? 'bg-white border-green-400 ring-2 ring-green-400 shadow-lg pulse-verde' : (turma.estado === 'liberada' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 shadow-sm');
+                    
+                    // LÓGICA DE CORES E DESFOQUE AUTOMÁTICO
+                    let cardClass = '';
+                    if (turma.estado === 'entregar') {
+                        // Verde Pulsante quando está na hora de entregar
+                        cardClass = 'bg-white border-green-400 ring-2 ring-green-400 shadow-lg pulse-verde scale-[1.02] z-10 relative';
+                    } else if (turma.estado === 'liberada') {
+                        // Desfocado e cinza assim que a aula terminar
+                        cardClass = 'bg-slate-100 border-slate-200 opacity-40 blur-[1.5px] grayscale pointer-events-none transition-all duration-1000';
+                    } else { 
+                        // Amarelo claro enquanto aguarda
+                        cardClass = 'bg-amber-50/40 border-amber-200 shadow-sm';
+                    }
+
                     const inicioAula = calcularInicioUltimaAula(turma.dados.saida);
                     let tempoFalta = null;
                     if (diaSelecionado === agora.getDay() && turma.estado === 'aguardar') tempoFalta = calcularTempoParaInicio(inicioAula);
 
                     html += `
-                        <div class="rounded-2xl transition-all p-6 flex flex-col gap-6 ${cardClass}">
+                        <div class="rounded-2xl transition-all duration-500 p-6 flex flex-col gap-6 ${cardClass}">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h3 class="text-3xl font-black text-slate-800">${turma.nome}</h3>
+                                    <h3 class="text-3xl font-black text-slate-800 tracking-tight">${turma.nome}</h3>
                                     <div class="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm uppercase">
                                         <span class="w-4 h-4 text-slate-500">${icones.book}</span>${turma.dados.prof}
                                     </div>
                                 </div>
                                 <div class="flex flex-col items-end gap-1">
-                                    <div class="text-xs font-bold text-slate-500">Última Aula:</div>
-                                    <div class="text-sm font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm">
+                                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Última Aula:</div>
+                                    <div class="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-2 shadow-sm">
                                         <span class="w-4 h-4 text-blue-600">${icones.clock}</span> ${inicioAula} - ${turma.dados.saida}
                                     </div>
-                                    ${tempoFalta ? `<div class="mt-1 text-xs font-bold text-amber-600 flex items-center gap-1"><span class="w-3 h-3">${icones.timer}</span> ${tempoFalta}</div>` : ''}
+                                    ${tempoFalta ? `<div class="mt-1.5 text-xs font-bold text-amber-600 flex items-center gap-1"><span class="w-3 h-3">${icones.timer}</span> ${tempoFalta}</div>` : ''}
                                 </div>
                             </div>
                             <div class="flex flex-col gap-2">
@@ -201,7 +212,7 @@
 
         window.onload = () => {
             diaSelecionado = obterDataBrasilia().getDay();
-            if(diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; // Se for fim de semana, abre na segunda
+            if(diaSelecionado === 0 || diaSelecionado === 6) diaSelecionado = 1; 
             renderizarApp();
             setInterval(() => { renderizarApp(); }, 30000); 
         };
